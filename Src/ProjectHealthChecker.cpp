@@ -20,21 +20,20 @@
 
 // ---------------------------------- Types ------------------------------------
 
+typedef GS::HashTable<GS::UniString, UInt16> ReportData;
+
 typedef struct {
-	GS::HashTable<GS::UniString, double> reportData;
-	Int64 iSourceGroup;
-	Int64 iTargetGroup;
-	Int64 iSource;
-	Int64 iTarget;
-	Int32 iAppend;
+	Int32 iAddZeroValues;
+	GS::HashTable<GS::UniString, ReportData> reportData;
 } CntlDlgData;
 
 // ---------------------------------- Variables --------------------------------
 
-static CntlDlgData			cntlDlgData;
+static CntlDlgData			cntlDlgData{1};
 #define OK_BUTTON			1
 #define SOURCE_GROUP_POPUP	2
 #define EXPORT_BUTTON		3
+#define ZERO_CHECKBOX		4
 
 static const GS::Array<GS::UniString> ac_types{
 	"Walls",
@@ -123,11 +122,144 @@ static const GS::Array<GS::UniString> ac_types{
 	"Openings",
 	"AnalyticalPointLoads",
 	"AnalyticalEdgeLoads",
-	"AnalyticalSurfaceLoads"
+	"AnalyticalSurfaceLoads",
 };
+
+
+static const GS::Array<GS::UniString> ac_mapTypes{
+	"Undefined Map",
+	"Project Map",
+	"PublicView Map",
+	"MyView Map",
+	"Layout Map",
+	"Publisher Sets",
+};
+
+
+static const GS::Array<GS::UniString> ac_navItemTypes{
+	"Undefined",
+	"Project",
+	"Story",
+	"Section",
+	"DetailDrawing",
+	"Perspective",
+	"Axonometry",
+	"List",
+	"Schedule",
+	"Toc",
+	"Camera",
+	"CameraSet",
+	"Info",
+	"Help",
+	"Layout",
+	"MasterLayout",
+	"Book",
+	"MasterFolder",
+	"SubSet",
+	"TextList",
+	"Elevation",
+	"InteriorElevation",
+	"WorksheetDrawing",
+	"DocumentFrom3D",
+	"Folder",
+	"Drawing",
+};
+
 
 // ---------------------------------- Prototypes -------------------------------
 
+static void AddItem(GS::UniString i_sTable, GS::UniString i_sItem, UInt16 i_iItemNumber)
+{
+	// Adds an item to both the UI report and the .xlsx output
+	if (!i_iItemNumber && !cntlDlgData.iAddZeroValues) return;
+
+	char sItem[256], _sNumberOfWalls[256], sInt[256];
+
+	sprintf(sItem, "Number of %s", i_sItem.ToCStr().Get());
+	itoa(i_iItemNumber, sInt, 10);
+
+	if (!cntlDlgData.reportData.ContainsKey(i_sTable))
+	{ 
+		ReportData _rd{};
+		cntlDlgData.reportData.Add(i_sTable, _rd);
+	}
+
+	cntlDlgData.reportData[i_sTable].Add(i_sItem, i_iItemNumber);
+
+	sprintf(_sNumberOfWalls, "%s: %s", sItem, sInt);
+	DGListInsertItem(32400, 2, DG_LIST_BOTTOM);
+	DGListSetItemText(32400, 2, DG_LIST_BOTTOM, GS::UniString(_sNumberOfWalls));
+}
+
+
+static short GetChildrenNumber(API_NavigatorItem i_item, API_NavigatorItemTypeID i_navID,
+	GS::UniString i_sInExclude = "",
+	bool i_isInclude = true)
+{
+	GSErrCode err;
+	short result = 0;
+	GS::Array<API_NavigatorItem> childItems;
+
+	auto _name = GS::UniString(i_item.uName).ToCStr().Get();
+
+	err = ACAPI_Navigator(APINavigator_GetNavigatorChildrenItemsID, &i_item, nullptr, &childItems);
+
+	if (i_item.itemType == i_navID)
+		if (i_sInExclude.GetLength())
+			if (i_isInclude == (GS::UniString(i_item.uName).FindFirst(i_sInExclude) < MaxUSize))
+				result += 1;
+		else
+			result += 1;
+
+	for (const API_NavigatorItem& childItem : childItems)
+	{
+		result += GetChildrenNumber(childItem, i_navID, i_sInExclude, i_isInclude);
+	}
+
+	return result;
+}
+
+
+static short GetNavigatorItems(API_NavigatorMapID i_mapID, 
+	API_NavigatorItemTypeID i_navID, 
+	GS::UniString i_inExcludeString = "", 
+	bool i_isInclude = true)
+{
+	short result = 0;
+	GSErrCode err;
+
+	GS::Array<API_NavigatorItem> childItems;
+	API_NavigatorItem item = {};
+	API_NavigatorSet	set;
+	GS::Array<API_NavigatorSet>	sets;
+	BNZeroMemory(&set, sizeof(API_NavigatorSet));
+	set.mapId = i_mapID;
+
+	if (i_mapID != API_PublisherSets)
+	{
+		err = ACAPI_Navigator(APINavigator_GetNavigatorSetID, &set, nullptr);
+		sets.Push(set);
+	}
+	else
+	{
+		Int32 nSet = 0;
+		err = ACAPI_Navigator(APINavigator_GetNavigatorSetNumID, &nSet, nullptr);
+
+		for (Int32 _i = 0; _i < nSet; _i++)
+		{
+			err = ACAPI_Navigator(APINavigator_GetNavigatorSetID, &set, &_i);
+			sets.Push(set);
+		}
+	}
+
+	for (const auto& _set : sets)
+	{
+		item.guid = set.rootGuid;
+		result += GetChildrenNumber(item, i_navID, i_inExcludeString, i_isInclude);
+	}
+
+	return result;
+}
 
 // -----------------------------------------------------------------------------
 // Open the selected DWG file into a library part
@@ -164,33 +296,37 @@ static void	Do_ExportReportToExcel(void)
 	DBPrintf("Exporting walls to Excel document...\n");
 
 	libxl::Book* book = xlCreateXMLBook();
-	libxl::Sheet* sheet = book->addSheet(UNISTR_TO_LIBXLSTR(GS::UniString("Report")));
-	libxl::Font* reportFormatFont = book->addFont();
-	reportFormatFont->setSize(6);
-	reportFormatFont->setColor(libxl::COLOR_GRAY50);
-	libxl::Format* reportFormat = book->addFormat();
-	reportFormat->setFont(reportFormatFont);
-	sheet->setCol(0, 1, 100.0);
 
-	GS::Array<GS::UniString> titles =
-	{ "Object type", "Number"};
-
-	for (UIndex ii = 0; ii < titles.GetSize(); ++ii) {
-		sheet->writeStr(0, ii, UNISTR_TO_LIBXLSTR(titles[ii]));
-	}
-
-	UIndex ii = 1;
 	for (auto item : cntlDlgData.reportData) {
-		sheet->writeStr(ii, 0, item.key->ToUStr());
-		sheet->writeNum(ii++, 1, *item.value);
+		const GS::UniString _k = *item.key;
+		libxl::Sheet* sheet = book->addSheet(UNISTR_TO_LIBXLSTR(_k));
+		sheet->setCol(0, 1, 50.0);
+
+		GS::Array<GS::UniString> titles =
+		{ "Object type", "Number" };
+
+		for (UIndex ii = 0; ii < titles.GetSize(); ++ii) {
+			sheet->writeStr(0, ii, UNISTR_TO_LIBXLSTR(titles[ii]));
+		}
+
+		UIndex ii = 1;
+
+		for (auto iitem : *item.value)
+		{
+			if (iitem.value > 0 || cntlDlgData.iAddZeroValues)
+			{
+				sheet->writeStr(ii, 0, iitem.key->ToUStr());
+				sheet->writeNum(ii++, 1, *iitem.value);
+			}
+		}
 	}
 
-	IO::Location dwgFileLoc;
-	if (!GetOpenFile(&dwgFileLoc, "xlsx", "*.xlsx"))
+	IO::Location xlsFileLoc;
+	if (!GetOpenFile(&xlsFileLoc, "xlsx", "*.xlsx"))
 		return;
 
 	GS::UniString filepath;
-	dwgFileLoc.ToPath(&filepath);
+	xlsFileLoc.ToPath(&filepath);
 
 	DBVERIFY(book->save(UNISTR_TO_LIBXLSTR(filepath)));
 	book->release();
@@ -224,12 +360,12 @@ GS::HashSet<API_Guid> GetSEOElements(bool isBoundingBoxConsidered = false)
 	API_Element				elementThis, elementOther;
 	GS::Array<API_Guid>		guid_Targets, guid_Operators;
 	API_Neig				_neig;
-	GS::HashSet<API_Guid>		result;
+	GS::HashSet<API_Guid>	result;
 	GS::Array<API_Guid>		_tempArray;
 
 	err = ACAPI_Element_GetElemList(API_ZombieElemID, &_tempArray);
 
-	for (API_Guid _guid : _tempArray) {
+	for (const API_Guid& _guid : _tempArray) {
 		bool bAdd = false;
 
 		BNZeroMemory(&elementThis, sizeof(API_Element));
@@ -297,26 +433,44 @@ static short DGCALLBACK CntlDlgCallBack(short message, short dialID, short item,
 	{
 		GSErrCode err;
 
+		DGSetItemValLong(dialID, ZERO_CHECKBOX, cntlDlgData.iAddZeroValues);
+
 		for (UINT16 i = 1; i <= ac_types.GetSize(); i++)
 		{
 			GS::Array<API_Guid> _array{};
 			char intStr[256], _sNumberOfWalls[256], _sNumberOfWalls2[256];
 
 			err = ACAPI_Element_GetElemList(static_cast<API_ElemTypeID>(i), &_array);
-			itoa(_array.GetSize(), intStr, 10);
+
 			auto _a = ac_types[i-1].ToCStr().Get();
-
 			sprintf(_sNumberOfWalls2, "Number of %s", _a);
-			cntlDlgData.reportData.Add(GS::UniString(_sNumberOfWalls2), _array.GetSize());
-
-			sprintf(_sNumberOfWalls, "Number of %s: %s", _a,  intStr);
-			DGListInsertItem(32400, 2, DG_LIST_BOTTOM);
-			DGListSetItemText(32400, 2, DG_LIST_BOTTOM, GS::UniString(_sNumberOfWalls));
+			AddItem("Elements", _sNumberOfWalls2, _array.GetSize());
 		}
 
-		cntlDlgData.reportData.Add("Number of SEO Operators/Targets", GetSEOElements().GetSize());
-		cntlDlgData.reportData.Add("Number of erroneous SEO Operators/Targets", GetSEOElements(true).GetSize());
-		
+		AddItem("SEO Data", "Number of SEO Operators/Targets", GetSEOElements().GetSize());
+		AddItem("SEO Data", "Number of erroneous SEO Operators/Targets", GetSEOElements(true).GetSize());
+
+		short iNavItems = 0;
+
+		for (UInt16 iMT = 1; iMT < ac_mapTypes.GetSize(); iMT++)
+			for (UInt16 iNIT = 1; iNIT < ac_navItemTypes.GetSize(); iNIT++)
+			{
+				iNavItems = GetNavigatorItems(static_cast<API_NavigatorMapID>(iMT), static_cast<API_NavigatorItemTypeID>(iNIT));
+
+				if (iNavItems > 0 || cntlDlgData.iAddZeroValues)
+				{
+					AddItem(ac_mapTypes[iMT], ac_navItemTypes[iNIT], iNavItems);
+				}
+
+				// -------------------------------------
+				iNavItems = GetNavigatorItems(static_cast<API_NavigatorMapID>(iMT), static_cast<API_NavigatorItemTypeID>(iNIT), "Story");
+
+				if (iNavItems > 0 || cntlDlgData.iAddZeroValues)
+				{
+					AddItem(ac_mapTypes[iMT], ac_navItemTypes[iNIT] + "Story", iNavItems);
+				}
+			}
+
 		break;
 	}
 	case DG_MSG_CLICK:
@@ -331,39 +485,45 @@ static short DGCALLBACK CntlDlgCallBack(short message, short dialID, short item,
 			break;
 		}
 	case DG_MSG_CHANGE:
+		switch (item) {
+		case ZERO_CHECKBOX:
+			cntlDlgData.iAddZeroValues = DGGetItemValLong(dialID, ZERO_CHECKBOX);
+			break;
+		}
 		break;
 	}
 
 	return result;
 }
 
-static GSErrCode	Do_CopyOptionSets()
+static GSErrCode	Do_Report()
 {
 	GSErrCode		err = NoError;
 
 	err = DGModalDialog(ACAPI_GetOwnResModule(), 32400, ACAPI_GetOwnResModule(), CntlDlgCallBack, (DGUserData)&cntlDlgData);
-	
+	ACAPI_KeepInMemory(true);
+
 	return err;
-}		// Do_CopyOptionSets
+}		// Do_Report
 
 
 // -----------------------------------------------------------------------------
 // Elements: Solid Operations Functions
 // -----------------------------------------------------------------------------
 
-GSErrCode __ACENV_CALL ElementsSolidOperation (const API_MenuParams *menuParams)
+GSErrCode __ACENV_CALL ProjectHealthChecker (const API_MenuParams *menuParams)
 {
 	return ACAPI_CallUndoableCommand ("Element Test API Function",
 		[&] () -> GSErrCode {
 
 			switch (menuParams->menuItemRef.itemIndex) {
-				case 1:		Do_CopyOptionSets();				break;
+				case 1:		Do_Report();						break;
 				default:										break;
 			}
 
 			return NoError;
 		});
-}		/* ElementsSolidOperation */
+}		/* ProjectHealthChecker */
 
 
 // -----------------------------------------------------------------------------
@@ -406,7 +566,7 @@ GSErrCode __ACENV_CALL	Initialize (void)
 	// Install menu handler callbacks
 	//
 
-	err = ACAPI_Install_MenuHandler (32506, ElementsSolidOperation);
+	err = ACAPI_Install_MenuHandler (32506, ProjectHealthChecker);
 
 	return err;
 }		/* Initialize */
