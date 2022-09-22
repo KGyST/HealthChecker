@@ -8,22 +8,8 @@
 #ifndef _PROJECT_HEALTH_CHECKER_H
 #define _PROJECT_HEALTH_CHECKER_H
 
-#include	"DG.h"
-#include	"ACAPinc.h"
-#include	"FileSystem.hpp"
-#include	"LibXL/libxl.h"
-#include	"DGFileDialog.hpp"
-
-#include	"APITypeDict.hpp"
-#include	"acTypes.hpp"
-#include	"SEO.hpp"
-#include	"DataStructs.hpp"
-#include	"LibPart.hpp"
-#include	"Attribute.hpp"
-#include	"Navigator.hpp"
-#include	"Excel.hpp"
-#include	"Table.hpp"
-#include	"Profile.hpp"
-#include	"WinReg.hpp"
+#define OK_BUTTON			1
+#define SOURCE_GROUP_POPUP	2
+#define EXPORT_BUTTON		3
 
 #endif //_PROJECT_HEALTH_CHECKER_H

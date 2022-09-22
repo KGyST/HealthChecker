@@ -1,12 +1,12 @@
 #ifndef _NAVIGATOR_HPP
 #define _NAVIGATOR_HPP
 
-#include	"APIEnvir.h"
+#include	"../APIEnvir.h"
 #include	"ACAPinc.h"					// also includes APIdefs.h
-#include	"APICommon.h"
-#include	"Table.hpp"
+#include	"../APICommon.h"
+#include	"../Table/Table.hpp"
 
-void ProcessNavigatorItems(CntlDlgData& io_cntlDlgData);
+void ProcessNavigatorItems();
 
 short GetChildrenNumber(API_NavigatorItem i_item,
 	const API_NavigatorItemTypeID& i_navID,

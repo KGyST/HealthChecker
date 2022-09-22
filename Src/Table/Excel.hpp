@@ -1,12 +1,12 @@
 #ifndef _EXCEL_HPP
 #define _EXCEL_HPP
 
-#include	"APIEnvir.h"
+#include	"../APIEnvir.h"
 #include	"ACAPinc.h"					// also includes APIdefs.h
-#include	"APICommon.h"
+#include	"../APICommon.h"
 #include	"FileSystem.hpp"
 #include	"DGFileDialog.hpp"
-#include	"DataStructs.hpp"
+#include	"../DataStructs.hpp"
 
 
 // -----------------------------------------------------------------------------
@@ -22,8 +22,8 @@ bool	GetOpenFile(IO::Location* const dloc,
 // Export GUID and a few basic parameters of all walls placed in the current project.
 // -----------------------------------------------------------------------------
 
-void	Do_ImportNamesFromExcel(CntlDlgData& io_cntlDlgData);
+void	Do_ImportNamesFromExcel();
 
-void	Do_ExportReportToExcel(CntlDlgData& io_cntlDlgData);
+void	Do_ExportReportToExcel();
 
 #endif //_EXCEL_HPP

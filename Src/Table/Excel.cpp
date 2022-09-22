@@ -1,5 +1,7 @@
 #include	"Excel.hpp"
 #include	"LibXL/libxl.h"
+#include	"../SettingsSingleton.hpp"
+#define UNISTR_TO_LIBXLSTR(str) (str.ToUStr ())
 
 // -----------------------------------------------------------------------------
 // Open the selected XLSX file into a library part
@@ -29,14 +31,7 @@ bool	GetOpenFile(IO::Location* const dloc,
 }
 
 
-
-// -----------------------------------------------------------------------------
-// Export GUID and a few basic parameters of all walls placed in the current project.
-// -----------------------------------------------------------------------------
-
-#define UNISTR_TO_LIBXLSTR(str) (str.ToUStr ())
-
-void	Do_ImportNamesFromExcel(CntlDlgData& io_cntlDlgData)
+void	Do_ImportNamesFromExcel()
 {
 	IO::Location xlsFileLoc;
 	if (!GetOpenFile(&xlsFileLoc, "xlsx", "*.xlsx", DG::FileDialog::OpenFile))
@@ -65,7 +60,7 @@ void	Do_ImportNamesFromExcel(CntlDlgData& io_cntlDlgData)
 			for (int row = sheet->firstRow(); row < sheet->lastRow(); ++row)
 			{
 				if (const wchar_t* sFilter = sheet->readStr(row, 0))
-					io_cntlDlgData.filterStrings.Add(GS::UniString(sFilter));
+					SettingsSingleton::GetInstance().FilterStrings.Add(GS::UniString(sFilter));
 			}
 		}
 
@@ -73,11 +68,11 @@ void	Do_ImportNamesFromExcel(CntlDlgData& io_cntlDlgData)
 	}
 }
 
-void	Do_ExportReportToExcel(CntlDlgData& io_cntlDlgData)
+void	Do_ExportReportToExcel()
 {
 	libxl::Book* book = xlCreateXMLBook();
 
-	for (auto item : io_cntlDlgData.reportData) {
+	for (auto item : SettingsSingleton::GetInstance().ReportData) {
 		const GS::UniString _k = *item.key;
 		libxl::Sheet* sheet = book->addSheet(UNISTR_TO_LIBXLSTR(_k));
 		sheet->setCol(0, 1, 50.0);
@@ -93,7 +88,7 @@ void	Do_ExportReportToExcel(CntlDlgData& io_cntlDlgData)
 
 		for (auto iitem : *item.value)
 		{
-			if (iitem.value > 0 || io_cntlDlgData.iAddZeroValues)
+			if (iitem.value > 0 || SettingsSingleton::GetInstance().CheckBoxData[ZERO_CHECKBOX])
 			{
 				sheet->writeStr(ii, 0, iitem.key->ToUStr());
 				sheet->writeNum(ii++, 1, *iitem.value);
