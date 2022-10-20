@@ -48,15 +48,18 @@ static short DGCALLBACK CntlDlgCallBack(short message, short dialID, short item,
 	switch (message) {
 	case DG_MSG_INIT:
 	{
-		GSErrCode err;
+		//GSErrCode err;
 
-		AttributeUsage attributeUsage{};
+		SETTINGS().CheckBoxData[Libpart_checkbox] = 0;
 
-		if (SETTINGS().CheckBoxData[Libpart_checkbox]) ProcessLibParts(/*iLibPartInstanceS*/);
+		SETTINGS().attributeUsage.ProcessAttributeUsage();
+		//AttributeUsage attributeUsage{};
+
+		if (SETTINGS().CheckBoxData[Libpart_checkbox]) ProcessLibParts();
 		if (SETTINGS().CheckBoxData[Element_checkbox]) ProcessElements();
 		if (SETTINGS().CheckBoxData[SEO_checkbox]) ProcessSEO();
 		if (SETTINGS().CheckBoxData[Navigator_checkbox]) ProcessNavigatorItems();
-		if (SETTINGS().CheckBoxData[Layer_checkbox]) ProcessAttributes(attributeUsage);
+		if (SETTINGS().CheckBoxData[Layer_checkbox]) ProcessAttributes();
 		if (SETTINGS().CheckBoxData[Profile_checkbox]) ProcessProfiles();
 
 		break;
@@ -99,7 +102,6 @@ static short DGCALLBACK SettingsDlgCallBack(short message, short dialID, short i
 			result = item;
 			break;
 		case Import_button:
-			//Do_ImportNamesFromExcel();
 			SETTINGS().ImportNamesFromExcel();
 
 			result = item;

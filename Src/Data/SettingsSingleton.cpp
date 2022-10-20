@@ -7,12 +7,27 @@
 #include	"Excel.hpp"
 #include	"Table/LibXLExtended.hpp"
 #include	"Utils/Utils.hpp"
+#include	"Utils/DateTime.hpp"
+
 
 const APITypeDict SettingsSingleton::ApiTypeDict = APITypeDict();
 SettingsSingleton& (*SETTINGS)() = SettingsSingleton::GetInstance;
 
+Loglevel SettingsSingleton::GetLoglevel() const 
+{ 
+	return m_loglevel; 
+}
+
+void SettingsSingleton::SetLoglevel(const Loglevel i_loglevel) 
+{ 
+	m_loglevel = i_loglevel; 
+}
+
 SettingsSingleton::SettingsSingleton()
 {
+	m_companyName = GetStringFromResource_(32506, 1);
+	m_appName = GetStringFromResource_(32000, 1);
+
 	FilterStrings = {};
 	
 	CheckBoxData.Put(Libpart_checkbox,	GetRegInt("LibraryPartData"));
@@ -35,6 +50,7 @@ SettingsSingleton::~SettingsSingleton()
 	SetRegInt(CheckBoxData[Profile_checkbox],	"IncludeProfileData");
 	SetRegInt(CheckBoxData[Count_instances],	"CountInstances");
 	SetRegInt(CheckBoxData[Zero_checkbox], GS::UniString("IncludeZeroValuedData"));
+
 }
 
 SettingsSingleton& SettingsSingleton::GetInstance()
