@@ -4,12 +4,12 @@
 
 
 'STR#' 32000 "Add-on Name and Description" {
-/* [  1] */		"ProjectHealthChecker"
+/* [  1] */		"HealthChecker"
 /* [  2] */		"Writes out project statistics to an .xlsx file"
 }
 
 
-'STR#' 32506 "ProjectHealthChecker" {
+'STR#' 32506 "HealthChecker" {
 /* [   ] */		"LIMA"
 /* [   ] */		"Project Health Check"
 /* [  1] */		"Write out project status"
@@ -23,7 +23,7 @@
 }
 
 /* Table data */
-'STR#' 32603 "ProjectHealthChecker" {
+'STR#' 32603 "HealthChecker" {
 /* [  1] */			"Number of user objects"
 /* [  2] */			"Number of user attributes"
 /* [  3] */			"Number of user library elements"

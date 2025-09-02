@@ -4,6 +4,10 @@
 #include	"SettingsSingleton.hpp"
 #include	"../Utils/Logger.hpp"
 
+#if ACVER >= 27
+#include	"ADBAttributeIndex.hpp"
+#endif
+
 template <typename T>
 void AddAttribute(GS::HashTable<T, ResultRow>* const io_table,
 	const T i_idx,
@@ -12,7 +16,7 @@ void AddAttribute(GS::HashTable<T, ResultRow>* const io_table,
 	const UInt16 i_col = 0
 	)
 {
-	if (!i_idx) return;
+	if (i_idx == T{}) return;
 	if (io_set != nullptr && io_set->Contains(i_idx))
 		return;
 
@@ -39,7 +43,7 @@ void AddAttribute(GS::HashTable<T, ResultRow>* const io_table,
 	)
 {
 #if ACVER >=27
-	AddAttribute <T>(io_table, ACAPI_CreateAttributeIndex(i_idx), io_set, nullptr, i_col);
+	AddAttribute <T>(io_table, ACAPI_CreateAttributeIndex((GS::Int32)i_idx), io_set, nullptr, i_col);
 #else
 	AddAttribute <T>(io_table, (API_AttributeIndex)i_idx, io_set, nullptr, i_col);
 #endif
@@ -55,6 +59,17 @@ void AddAttribute(GS::HashTable<T, ResultRow>* const io_table,
 	AddAttribute <T>(io_table, i_idx, io_set, nullptr, i_col);
 }
 
+#if ACVER >= 27
+void AddAttribute(GS::HashTable<short, ResultRow>* const io_table,
+	const API_OverriddenPen i_idx,
+	GS::HashSet <short>* const io_set = nullptr,
+	GS::HashSet <short>* const io_todoSet = nullptr,
+	const UInt16 i_col = 0
+)
+{
+	AddAttribute <short>(io_table, i_idx.value, io_set, io_todoSet);
+}
+#else
 void AddAttribute(GS::HashTable<short, ResultRow>* const io_table,
 	const API_PenOverrideType i_idx,
 	GS::HashSet <short>* const io_set = nullptr,
@@ -64,8 +79,47 @@ void AddAttribute(GS::HashTable<short, ResultRow>* const io_table,
 {
 	AddAttribute <short> (io_table, i_idx.cutFillBackgroundPen, io_set, io_todoSet);
 	AddAttribute <short> (io_table, i_idx.cutFillPen, io_set, io_todoSet);
-	AddAttribute <short> (io_table, i_idx.overrideCutFillBackgroundPen, io_set, io_todoSet);
-	AddAttribute <short> (io_table, i_idx.overrideCutFillPen, io_set, io_todoSet);
+	//AddAttribute <short> (io_table, i_idx.overrideCutFillBackgroundPen, io_set, io_todoSet);
+	//AddAttribute <short> (io_table, i_idx.overrideCutFillPen, io_set, io_todoSet);
+}
+#endif
+
+void AddAttribute(GS::HashTable<API_AttributeIndex, ResultRow>* const io_table,
+#if ACVER >= 27
+	const ADB::AttributeIndex& i_idx,
+#else
+	const API_AttributeIndex i_idx,
+#endif
+	GS::HashSet <API_AttributeIndex>* const io_set = nullptr,
+	GS::HashSet <API_AttributeIndex>* const io_todoSet = nullptr,
+	const UInt16 i_col = 0
+)
+{
+#if ACVER >= 27
+	AddAttribute<API_AttributeIndex>(io_table, ACAPI_CreateAttributeIndex(i_idx.ToGSAttributeIndex()), io_set, io_todoSet, i_col);
+#else
+	AddAttribute<API_AttributeIndex>(io_table, i_idx, io_set, io_todoSet, i_col);
+#endif
+}
+
+template <typename T>
+void AddPenOverrideAttribte(GS::HashTable<short, ResultRow> *i_penUsageTable, const T *i_element, GS::HashSet <short> *i_penSet)
+{
+#if ACVER >= 27
+	AddAttribute(i_penUsageTable, i_element->cutFillPen, i_penSet);
+	AddAttribute(i_penUsageTable, i_element->cutFillBackgroundPen, i_penSet);
+#else
+	AddAttribute(i_penUsageTable, i_element.penOverride, i_penSet);
+#endif
+}
+
+void AddSurfaceAttribte(GS::HashTable<API_AttributeIndex, ResultRow> *i_penUsageTable, const API_OverriddenAttribute &i_surface, GS::HashSet <API_AttributeIndex> *i_surfSet)
+{
+#if ACVER >= 27
+	AddAttribute(i_penUsageTable, i_surface.value, i_surfSet);
+#else
+	AddAttribute(i_penUsageTable, i_surface.attributeIndex, i_surfSet);
+#endif
 }
 
 void AttributeUsage::ProcessParameters(const API_Element& i_element, AttributeUsageSet * const io_attributeUsageSet)
@@ -140,18 +194,16 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<API_AttributeIndex> (&ltUsageTable, i_element.wall.belowViewLineType, &aus.ltSet);
 		AddAttribute<API_AttributeIndex> (&buildMatUsageTable, i_element.wall.buildingMaterial, &aus.buildMatSet);
 		AddAttribute<API_AttributeIndex> (&compositeUsageTable, i_element.wall.composite, &aus.compSet);
-		AddAttribute(&penUsageTable, i_element.wall.penOverride, &aus.penSet);
-		AddAttribute(&penUsageTable, i_element.wall.penOverride, &aus.penSet);
-		AddAttribute<API_AttributeIndex> (&surfUsageTable, i_element.wall.refMat.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex> (&surfUsageTable, i_element.wall.oppMat.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex> (&surfUsageTable, i_element.wall.sidMat.attributeIndex, &aus.surfSet);
+		AddPenOverrideAttribte<API_WallType>(&penUsageTable, &i_element.wall, &aus.penSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.wall.refMat, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.wall.oppMat, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.wall.sidMat, &aus.surfSet);
 		AddAttribute<API_AttributeIndex> (&profileUsageTable, i_element.wall.profileAttr);
 		AddAttribute<API_AttributeIndex> (&ltUsageTable, i_element.wall.aboveViewLineType, &aus.ltSet);
-		
 		break;
 	case API_ColumnID:
 		AddAttribute<short> (&penUsageTable, i_element.column.corePen, &aus.penSet);
-		AddAttribute(&penUsageTable, i_element.column.penOverride, &aus.penSet);
+		AddPenOverrideAttribte<API_ColumnType>(&penUsageTable, &i_element.column, &aus.penSet);
 		AddAttribute<short> (&penUsageTable, i_element.column.belowViewLinePen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.column.belowViewLineType, &aus.ltSet);
 		AddAttribute<API_AttributeIndex> (&ltUsageTable, i_element.column.contLtype, &aus.ltSet);
@@ -165,25 +217,25 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<API_AttributeIndex> (&fillUsageTable, i_element.column.coverFillType, &aus.fillSet);
 		AddAttribute<short> (&penUsageTable, i_element.column.coverFillForegroundPen, &aus.penSet);
 		AddAttribute<short> (&penUsageTable, i_element.column.coverFillBackgroundPen, &aus.penSet);
-
 		break;
 	case API_BeamID:
-		AddAttribute<short> (&penUsageTable, i_element.column.corePen, &aus.penSet);
-		AddAttribute(&penUsageTable, i_element.column.penOverride, &aus.penSet);
-		AddAttribute<short> (&penUsageTable, i_element.column.belowViewLinePen, &aus.penSet);
-		AddAttribute<API_AttributeIndex> (&ltUsageTable, i_element.column.belowViewLineType, &aus.ltSet);
-		AddAttribute<API_AttributeIndex> (&ltUsageTable, i_element.column.contLtype, &aus.ltSet);
-		AddAttribute<API_AttributeIndex> (&ltUsageTable, i_element.column.venLineType, &aus.ltSet);
-		AddAttribute<short> (&penUsageTable, i_element.column.venLinePen, &aus.penSet);
-		AddAttribute<short> (&penUsageTable, i_element.column.coreSymbolPen, &aus.penSet);
-		AddAttribute<API_AttributeIndex> (&ltUsageTable, i_element.column.hiddenLineType, &aus.ltSet);
-		AddAttribute<short> (&penUsageTable, i_element.column.hiddenLinePen, &aus.penSet);
-		AddAttribute<API_AttributeIndex> (&fillUsageTable, i_element.column.coverFillType, &aus.fillSet);
-
+		AddAttribute<short>(&penUsageTable, i_element.beam.aboveViewLinePen, &aus.penSet);
+		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.beam.aboveViewLineType, &aus.ltSet);
+		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.beam.refLtype, &aus.ltSet);
+		AddAttribute<short>(&penUsageTable, i_element.beam.refPen, &aus.penSet);
+		AddAttribute<short>(&penUsageTable, i_element.beam.cutContourLinePen, &aus.penSet);
+		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.beam.cutContourLineType, &aus.ltSet);
+		AddPenOverrideAttribte<API_BeamType>(&penUsageTable, &i_element.beam, &aus.penSet);
+		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.beam.hiddenLineType, &aus.ltSet);
+		AddAttribute<short>(&penUsageTable, i_element.beam.hiddenLinePen, &aus.penSet);
+		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.beam.belowViewLineType, &aus.ltSet);
+		AddAttribute<short>(&penUsageTable, i_element.beam.belowViewLinePen, &aus.penSet);
+		AddAttribute<API_AttributeIndex>(&fillUsageTable, i_element.beam.coverFillType, &aus.fillSet);
+		AddAttribute<short>(&penUsageTable, i_element.beam.coverFillForegroundPen, &aus.penSet);
+		AddAttribute<short>(&penUsageTable, i_element.beam.coverFillBackgroundPen, &aus.penSet);
 		break;
 	case API_CurtainWallSegmentID:
 		AddAttribute<short>(&penUsageTable, i_element.cwSegment.pen, &aus.penSet);
-
 		break;
 	case API_CurtainWallFrameID:
 		AddAttribute<short> (&penUsageTable, i_element.cwFrame.pen, &aus.penSet);
@@ -191,25 +243,21 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<API_AttributeIndex>(&buildMatUsageTable, i_element.cwFrame.buildingMaterial, &aus.buildMatSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.cwFrame.cutLineType, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.cwFrame.cutLinePen, &aus.penSet);
-
 		break;
 	case API_CurtainWallPanelID:
 		AddAttribute<short>(&penUsageTable, i_element.cwPanel.pen, &aus.penSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.cwPanel.outerSurfaceMaterial.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.cwPanel.innerSurfaceMaterial.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.cwPanel.cutSurfaceMaterial.attributeIndex, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.cwPanel.outerSurfaceMaterial, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.cwPanel.innerSurfaceMaterial, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.cwPanel.cutSurfaceMaterial, &aus.surfSet);
 		AddAttribute<API_AttributeIndex>(&buildMatUsageTable, i_element.cwPanel.buildingMaterial, &aus.buildMatSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.cwPanel.cutLineType, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.cwPanel.cutLinePen, &aus.penSet);
-
 		break;
 	case API_CurtainWallJunctionID:
 		AddAttribute<short>(&penUsageTable, i_element.cwJunction.pen, &aus.penSet);
-
 		break;
 	case API_CurtainWallAccessoryID:
 		AddAttribute<short>(&penUsageTable, i_element.cwAccessory.pen, &aus.penSet);
-
 		break;
 	case API_CurtainWallID:
 		AddAttribute<short>(&penUsageTable, i_element.curtainWall.pen, &aus.penSet);
@@ -221,21 +269,18 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<short>(&penUsageTable, i_element.curtainWall.frameCutLinePen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.curtainWall.panelCutLinePen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.curtainWall.panelCutLineType, &aus.ltSet);
-
 		break;
 	case API_ColumnSegmentID:
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.columnSegment.extrusionSurfaceMaterial.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.columnSegment.endsMaterial.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.columnSegment.venBuildingMaterial, &aus.surfSet);
-
+		AddSurfaceAttribte(&surfUsageTable, i_element.columnSegment.extrusionSurfaceMaterial, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.columnSegment.endsMaterial, &aus.surfSet);
+		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.columnSegment.venBuildingMaterial, &aus.buildMatSet);
 		break;
 	case API_BeamSegmentID:
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.beamSegment.leftMaterial.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.beamSegment.topMaterial.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.beamSegment.rightMaterial.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.beamSegment.bottomMaterial.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.beamSegment.endsMaterial.attributeIndex, &aus.surfSet);
-
+		AddSurfaceAttribte(&surfUsageTable, i_element.beamSegment.leftMaterial, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.beamSegment.topMaterial, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.beamSegment.rightMaterial, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.beamSegment.bottomMaterial, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.beamSegment.endsMaterial, &aus.surfSet);
 		break;
 	case API_DoorID:
 		AddAttribute<short>(&penUsageTable, i_element.door.openingBase.pen, &aus.penSet);
@@ -252,7 +297,6 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.door.openingBase.belowViewLineType, &aus.ltSet);
 
 		ProcessParameters(i_element, &aus);
-
 		break;
 	case API_WindowID:
 		AddAttribute<short>(&penUsageTable, i_element.window.openingBase.pen, &aus.penSet);
@@ -269,7 +313,6 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.window.openingBase.belowViewLineType, &aus.ltSet);
 
 		ProcessParameters(i_element, &aus);
-
 		break;
 	case API_ObjectID:
 		AddAttribute<short>(&penUsageTable, i_element.object.pen, &aus.penSet);
@@ -281,7 +324,6 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<short>(&penUsageTable, i_element.object.sectContPen, &aus.penSet);
 
 		ProcessParameters(i_element, &aus);
-
 		break;
 	case API_LampID:
 		AddAttribute<short>(&penUsageTable, i_element.lamp.pen, &aus.penSet);
@@ -293,7 +335,6 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<short>(&penUsageTable, i_element.lamp.sectContPen, &aus.penSet);
 
 		ProcessParameters(i_element, &aus);
-
 		break;
 	case API_SkylightID:
 		AddAttribute<short>(&penUsageTable, i_element.skylight.openingBase.pen, &aus.penSet);
@@ -310,7 +351,6 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.skylight.openingBase.belowViewLineType, &aus.ltSet);
 
 		ProcessParameters(i_element, &aus);
-
 		break;
 	case API_SlabID:
 		AddAttribute<short>(&penUsageTable, i_element.slab.pen, &aus.penSet);
@@ -318,24 +358,23 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<API_AttributeIndex>(&buildMatUsageTable, i_element.slab.buildingMaterial, &aus.buildMatSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.slab.composite, &aus.compSet);
 		AddAttribute<short>(&penUsageTable, i_element.slab.sectContPen, &aus.penSet);
-		AddAttribute(&penUsageTable, i_element.slab.penOverride, &aus.penSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.slab.topMat.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.slab.sideMat.attributeIndex, &aus.surfSet);
-		AddAttribute<API_AttributeIndex>(&surfUsageTable, i_element.slab.botMat.attributeIndex, &aus.surfSet);
+		AddPenOverrideAttribte<API_SlabType>(&penUsageTable, &i_element.slab, &aus.penSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.slab.topMat, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.slab.sideMat, &aus.surfSet);
+		AddSurfaceAttribte(&surfUsageTable, i_element.slab.botMat, &aus.surfSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.slab.hiddenContourLineType, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.slab.hiddenContourLinePen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.slab.sectContLtype, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.slab.floorFillPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.slab.floorFillBGPen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.slab.floorFillInd, &aus.compSet);
-
 		break;
 	case API_RoofID:
 		AddAttribute<short>(&penUsageTable, i_element.shell.shellBase.pen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.roof.shellBase.ltypeInd, &aus.ltSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.roof.shellBase.buildingMaterial, &aus.compSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.roof.shellBase.composite, &aus.compSet);
-		AddAttribute(&penUsageTable, i_element.roof.shellBase.penOverride, &aus.penSet);
+		AddPenOverrideAttribte<API_ShellBaseType>(&penUsageTable, &i_element.roof.shellBase, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.roof.shellBase.sectContLtype, &aus.compSet);
 		AddAttribute<short>(&penUsageTable, i_element.roof.shellBase.sectContPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.roof.shellBase.floorFillPen, &aus.penSet);
@@ -343,17 +382,16 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<short>(&penUsageTable, i_element.roof.shellBase.floorFillBGPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.roof.shellBase.aboveViewLinePen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.roof.shellBase.aboveViewLineType, &aus.ltSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.roof.shellBase.topMat.attributeIndex, &aus.compSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.roof.shellBase.sidMat.attributeIndex, &aus.compSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.roof.shellBase.botMat.attributeIndex, &aus.compSet);
-
+		AddSurfaceAttribte(&compositeUsageTable, i_element.roof.shellBase.topMat, &aus.compSet);
+		AddSurfaceAttribte(&compositeUsageTable, i_element.roof.shellBase.sidMat, &aus.compSet);
+		AddSurfaceAttribte(&compositeUsageTable, i_element.roof.shellBase.botMat, &aus.compSet);
 		break;;
 	case API_ShellID:
 		AddAttribute<short>(&penUsageTable, i_element.shell.shellBase.pen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.shell.shellBase.ltypeInd, &aus.ltSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.shell.shellBase.buildingMaterial, &aus.compSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.shell.shellBase.composite, &aus.compSet);
-		AddAttribute(&penUsageTable, i_element.shell.shellBase.penOverride, &aus.penSet);
+		AddPenOverrideAttribte<API_ShellBaseType>(&penUsageTable, &i_element.shell.shellBase, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.shell.shellBase.sectContLtype, &aus.compSet);
 		AddAttribute<short>(&penUsageTable, i_element.shell.shellBase.sectContPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.shell.shellBase.floorFillPen, &aus.penSet);
@@ -361,14 +399,13 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<short>(&penUsageTable, i_element.shell.shellBase.floorFillBGPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.shell.shellBase.aboveViewLinePen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.shell.shellBase.aboveViewLineType, &aus.ltSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.shell.shellBase.topMat.attributeIndex, &aus.compSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.shell.shellBase.sidMat.attributeIndex, &aus.compSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.shell.shellBase.botMat.attributeIndex, &aus.compSet);
-
+		AddSurfaceAttribte(&compositeUsageTable, i_element.shell.shellBase.topMat, &aus.compSet);
+		AddSurfaceAttribte(&compositeUsageTable, i_element.shell.shellBase.sidMat, &aus.compSet);
+		AddSurfaceAttribte(&compositeUsageTable, i_element.shell.shellBase.botMat, &aus.compSet);
 		break;
 	case API_MorphID:
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.morph.buildingMaterial, &aus.compSet);
-		AddAttribute(&penUsageTable, i_element.morph.penOverride, &aus.penSet);
+		AddPenOverrideAttribte<API_MorphType>(&penUsageTable, &i_element.morph, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.morph.cutLineType, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.morph.cutLinePen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.morph.uncutLinePen, &aus.penSet);
@@ -378,52 +415,42 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.morph.coverFillType, &aus.compSet);
 		AddAttribute<short>(&penUsageTable, i_element.morph.coverFillPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.morph.coverFillBGPen, &aus.penSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.morph.material.attributeIndex, &aus.compSet);
-
+		AddSurfaceAttribte(&compositeUsageTable, i_element.morph.material, &aus.compSet);
 		break;
-
 	case API_MeshID:
 		AddAttribute<short>(&penUsageTable, i_element.mesh.contPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.mesh.levelPen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.mesh.ltypeInd, &aus.ltSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.mesh.buildingMaterial, &aus.compSet);
-		AddAttribute(&penUsageTable, i_element.mesh.penOverride, &aus.penSet);
+		AddPenOverrideAttribte<API_MeshType>(&penUsageTable, &i_element.mesh, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.mesh.sectContPen, &aus.penSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.mesh.topMat.attributeIndex, &aus.compSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.mesh.sideMat.attributeIndex, &aus.compSet);
-		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.mesh.botMat.attributeIndex, &aus.compSet);
+		AddSurfaceAttribte(&compositeUsageTable, i_element.mesh.topMat, &aus.compSet);
+		AddSurfaceAttribte(&compositeUsageTable, i_element.mesh.sideMat, &aus.compSet);
+		AddSurfaceAttribte(&compositeUsageTable, i_element.mesh.botMat, &aus.compSet);
 		AddAttribute<short>(&penUsageTable, i_element.mesh.showLines, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.mesh.skirt, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.mesh.floorFillPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.mesh.floorFillBGPen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.mesh.floorFillInd, &aus.compSet);
-
 		break;
-
 	case API_DimensionID:
 		AddAttribute<short>(&penUsageTable, i_element.dimension.linPen, &aus.penSet);
-
 		break;
-
 	case API_RadialDimensionID:
 		AddAttribute<short>(&penUsageTable, i_element.radialDimension.linPen, &aus.penSet);
-
 		break;
 	case API_LevelDimensionID:
 		AddAttribute<short>(&penUsageTable, i_element.levelDimension.pen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.levelDimension.dimForm, &aus.penSet);
-
 		break;
 	case API_AngleDimensionID:
 		AddAttribute<short>(&penUsageTable, i_element.angleDimension.linPen, &aus.penSet);
-
 		break;
 	case API_TextID:
 		AddAttribute<short>(&penUsageTable, i_element.text.pen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.text.font, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.text.contourPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.text.fillPen, &aus.penSet);
-
 		break;
 	case API_ZoneID:
 		AddAttribute<short>(&penUsageTable, i_element.zone.pen, &aus.penSet);
@@ -435,64 +462,51 @@ AttributeUsageSet AttributeUsage::GeneralAttributeUsageByElement(const API_Eleme
 		AddAttribute<short>(&penUsageTable, i_element.zone.floorContLPen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.zone.floorContLType, &aus.compSet);
 		AddAttribute<short>(&penUsageTable, i_element.zone.relativeTopStory, &aus.penSet);
-
 		break;
-
 	case API_HatchID:
 		AddAttribute<short>(&penUsageTable, i_element.hatch.fillBGPen, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.hatch.fillInd, &aus.compSet);
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.hatch.buildingMaterial, &aus.compSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.hatch.ltypeInd, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.hatch.determination, &aus.penSet);
-
 		break;
 	case API_LineID:
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.line.ltypeInd, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.line.determination, &aus.penSet);
-
 		break;
-
 	case API_PolyLineID:
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.polyLine.ltypeInd, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.polyLine.determination, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.polyLine.drawSegmentMode, &aus.penSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.polyLine.ltypeInd, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.polyLine.determination, &aus.penSet);
-
 		break;
 	case API_SplineID:
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.spline.ltypeInd, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.spline.determination, &aus.penSet);
-
 		break;
 	case API_HotspotID:
 		AddAttribute<short>(&penUsageTable, i_element.hotspot.pen, &aus.penSet);
-
 		break;
 	case API_InteriorElevationID:
 		AddAttribute<short>(&penUsageTable, i_element.interiorElevation.storyToShowOn, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.interiorElevation.markerPen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.interiorElevation.markerFont, &aus.penSet);
-
 		break;
 	case API_CameraID:
 		AddAttribute<short>(&penUsageTable, i_element.camera.perspCam.pen, &aus.penSet);
-
 		break;
 	case API_CamSetID:
 		AddAttribute<short>(&penUsageTable, i_element.camset.perspPars.pen, &aus.penSet);
-
 		break;
 	case API_DrawingID:
 		AddAttribute<API_AttributeIndex>(&compositeUsageTable, i_element.drawing.penTableIndex, &aus.compSet);
 		AddAttribute<API_AttributeIndex>(&ltUsageTable, i_element.drawing.borderLineType, &aus.ltSet);
 		AddAttribute<short>(&penUsageTable, i_element.drawing.borderPen, &aus.penSet);
-
 		break;
 	case API_RailingID:
 		AddAttribute<short>(&penUsageTable, i_element.railing.referenceLinePen, &aus.penSet);
 		AddAttribute<short>(&penUsageTable, i_element.railing.contourPen, &aus.penSet);
-
 		break;
 	}
 
@@ -556,10 +570,11 @@ void AttributeUsage::ProcessVectorImage(const API_AttributeDefExt& i_defs,
 			AddAttribute<short>(&penUsageTable, ho.fillBkgPen, &i_newSet->penSet, &i_todoSet->penSet, 1);
 			AddAttribute<short>(&penUsageTable, ho.GetContPen().GetColorIndex(), &i_newSet->penSet, &i_todoSet->penSet, 1);
 			AddAttribute<short>(&penUsageTable, ho.GetContPen().GetEffectiveColorIndex(), &i_newSet->penSet, &i_todoSet->penSet, 1);
-			AddAttribute<API_AttributeIndex>(&ltUsageTable, ho.GetContLType(), &i_newSet->ltSet, &i_todoSet->ltSet, 1);
-			AddAttribute<API_AttributeIndex>(&fillUsageTable, ho.GetFillIdx(), &i_newSet->fillSet, &i_todoSet->fillSet, 1);
-			AddAttribute<API_AttributeIndex>(&buildMatUsageTable, ho.GetBuildMatIdx(), &i_newSet->buildMatSet, &i_todoSet->buildMatSet, 1);
-			AddAttribute<API_AttributeIndex>(&surfUsageTable, ho.GetSurfaceIdx(), &i_newSet->surfSet, &i_todoSet->surfSet, 1);
+			AddAttribute(&ltUsageTable, ho.GetContLType(), &i_newSet->ltSet, &i_todoSet->ltSet, 1);
+			AddAttribute(&fillUsageTable, ho.GetFillIdx(), &i_newSet->fillSet, &i_todoSet->fillSet, 1);
+			AddAttribute(&buildMatUsageTable, ho.GetBuildMatIdx(), &i_newSet->buildMatSet, &i_todoSet->buildMatSet, 1);
+			AddAttribute(&surfUsageTable, ho.GetSurfaceIdx(), &i_newSet->surfSet, &i_todoSet->surfSet, 1);
+			AddAttribute(&surfUsageTable, ho.GetSurfaceIdx(), &i_newSet->surfSet, &i_todoSet->surfSet, 1);
 		}
 
 		const Sy_SplineType* sslit = cvii;

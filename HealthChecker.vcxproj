@@ -82,15 +82,23 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'=='24'" Label="Globals">
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WinCorr>\Win</WinCorr>
+    <ImpCorr>Imp</ImpCorr>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'=='25'" Label="Globals">
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WinCorr>\Win</WinCorr>
+    <ImpCorr>Imp</ImpCorr>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'=='26'" Label="Globals">
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WinCorr>\Win</WinCorr>
+    <ImpCorr>Imp</ImpCorr>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'=='27'" Label="Globals">
     <WindowsTargetPlatformVersion>10</WindowsTargetPlatformVersion>
+    <WinCorr/>
+    <ImpCorr/>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -261,10 +269,10 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <Library Condition="'$(BuildType)'=='Debug'" Include="$(ACDevKitSupport)\Lib\Win\ACAP_STATD.lib">
+    <Library Condition="'$(BuildType)'=='Debug'" Include="$(ACDevKitSupport)\Lib$(WinCorr)\ACAP_STATD.lib">
       <FileType>Document</FileType>
     </Library>
-    <Library Condition="'$(BuildType)'=='Release'" Include="$(ACDevKitSupport)\Lib\Win\ACAP_STAT.lib">
+    <Library Condition="'$(BuildType)'=='Release'" Include="$(ACDevKitSupport)\Lib$(WinCorr)\ACAP_STAT.lib">
       <FileType>Document</FileType>
     </Library>
     <Library Include="$(ACDevKitModules)\DGLib\Win\DGImp.lib">
@@ -288,13 +296,19 @@
     <Library Condition="'$(ACVersion)'== 25" Include="$(ACDevKitModules)\ObjectDatabase\Win\ObjectDatabaseImp.LIB">
       <FileType>Document</FileType>
     </Library>
-    <Library Condition="'$(ACVersion)'== 26" Include="$(ACDevKitModules)\RS\Win\RSImp.LIB">
-      <FileType>Document</FileType>
-    </Library>
     <Library Condition="'$(ACVersion)'=='25'" Include="$(ACDevKitModules)\RS\Win\RSImp.lib">
       <FileType>Document</FileType>
     </Library>
-    <Library Include="$(ACDevKitModules)\LibXL\Win\LibXLImp.lib">
+    <Library Condition="'$(ACVersion)'== 26" Include="$(ACDevKitModules)\RS\Win\RSImp.LIB">
+      <FileType>Document</FileType>
+    </Library>
+    <Library Condition="'$(ACVersion)'== 27" Include="$(ACDevKitModules)\RS\Win\RSImp.LIB">
+      <FileType>Document</FileType>
+    </Library>
+    <Library Condition="'$(ACVersion)'== 27" Include="$(ACDevKitModules)\CADInfrastructureBase\Win\CADInfrastructureBaseImp.LIB">
+      <FileType>Document</FileType>
+    </Library>
+    <Library Include="$(ACDevKitModules)\LibXL\Win\LibXL$(ImpCorr).lib">
       <FileType>Document</FileType>
     </Library>
     <Library Include="$(ACDevKitModules)\Geometry\Win\GeometryImp.LIB">

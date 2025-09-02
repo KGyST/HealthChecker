@@ -91,7 +91,11 @@ AbstractData* CountAttributeContents(const API_Attribute& i_apiAttrib, AbstractD
 
 	GS::HashTable<T, ResultRow>  t = ((StructDefObject<T>*)i_attrs)->table;
 	T i = (T)i_apiAttrib.header.index;
+#if ACVER >= 27
+	result->id = i.ToInt32_Deprecated() ;
+#else
 	result->id = i;
+#endif
 	result->name = GS::UniString(i_apiAttrib.header.name);
 	if (t.ContainsKey(i))
 	{
@@ -133,6 +137,29 @@ void AddAttributeListToTable(const API_AttrTypeID i_attrID, const GS::HashTable<
 	return AddAttributeListToTable(i_attrID, i_table, GSFR(i_sTable), i_hasName);
 }
 
+#if ACVER >= 27
+//void AddPenListToTable(const GS::HashTable<short, ResultRow>& i_table, const GS::UniString& i_sTable, const bool i_hasName = true)
+//{
+//	GS::Array<AbstractData*> resultArray;
+//
+//	resultArray = ListAttributes(CountPenListContents, &StructDefObject<short>(i_table));
+//
+//	for (AbstractData* attrib : resultArray)
+//	{
+//		AttributeReportObject* _attrib = (AttributeReportObject*)attrib;
+//
+//		if (i_hasName)
+//			SETTINGS().GetSheet(i_sTable).AddItem(GS::UniString(_attrib->name), _attrib->resultRow);
+//		else
+//		{
+//			char sAttrib[4];
+//			itoa(_attrib->id, sAttrib, 10);
+//			SETTINGS().GetSheet(i_sTable).AddItem(GS::UniString(sAttrib), _attrib->resultRow);
+//		}
+//	}
+//}
+#endif
+
 // -----------------------------------------------------------------------------
 //  List attributes
 // -----------------------------------------------------------------------------
@@ -153,7 +180,11 @@ void ProcessAttributes()
 	AddAttributeListToTable<API_AttributeIndex>(API_LayerID, SETTINGS().attributeUsage.layerContentTable, LayerData);
 	SETTINGS().GetSheet(LayerData).SetHeader(ReportSheetHeader{ GSFR(LayerName), REPORT_ROWS });
 
+#if ACVER >= 27
+	//AddPenListToTable(SETTINGS().attributeUsage.penUsageTable, PenData, false);
+#else
 	AddAttributeListToTable<short>(API_PenID, SETTINGS().attributeUsage.penUsageTable, PenData, false);
+#endif
 	SETTINGS().GetSheet(PenData).SetHeader(ReportSheetHeader{ GSFR(PenNumber), REPORT_ROWS});
 
 	AddAttributeListToTable<API_AttributeIndex>(API_LinetypeID, SETTINGS().attributeUsage.ltUsageTable, LTData);
@@ -207,11 +238,16 @@ UInt32 CountAttributes(
 	AbstractData* const i_attrs /*= nullptr*/)
 {
 	API_Attribute		attrib;
-	API_AttributeIndex	count;
 	GSErrCode			err;
-	Int32 i, result = 0;
-
+#if ACVER >= 27
+	GS::UInt32 count;
+	err = ACAPI_Attribute_GetNum(i_attrType, count);
+#else
+	API_AttributeIndex	count;
 	err = ACAPI_Attribute_GetNum(i_attrType, &count);
+#endif
+	UInt32 i, result = 0;
+
 	if (err != NoError) {
 		LOGGER().Log("ACAPI_Attribute_GetNum", err, LogLev_WARNING);
 		return 0;
@@ -221,8 +257,11 @@ UInt32 CountAttributes(
 		for (i = 1; i <= count; i++) {
 			BNZeroMemory(&attrib, sizeof(API_Attribute));
 			attrib.header.typeID = i_attrType;
+#if ACVER >= 27
+			attrib.header.index = ACAPI_CreateAttributeIndex(i);
+#else
 			attrib.header.index = i;
-
+#endif
 			err = ACAPI_Attribute_Get(&attrib);
 
 			if (err == NoError && i_func(attrib, i_attrs))
@@ -240,24 +279,33 @@ GS::Array<AbstractData*> ListAttributes(
 	AbstractData* const i_attrs /*= nullptr*/)
 {
 	API_Attribute			attrib;
-	API_AttributeIndex		count;
 	GSErrCode				err;
+#if ACVER >= 27
+	GS::UInt32 count;
+	err = ACAPI_Attribute_GetNum(i_attrType, count);
+	// ACAPI_Attribute_GetPenNum
+#else
+	API_AttributeIndex	count;
+	err = ACAPI_Attribute_GetNum(i_attrType, &count);
+#endif
 	AbstractData* resultThis;
 	GS::Array<AbstractData*>	io_attrs;
 
-	err = ACAPI_Attribute_GetNum(i_attrType, &count);
 	if (err != NoError) {
 		WriteReport_Err("ACAPI_Attribute_GetNum", err);
 	}
 
 	if (i_func)
-		for (Int32 i = 1; i <= count; i++) {
+		for (UInt32 i = 1; i <= count; i++) {
 			try
 			{
 				BNZeroMemory(&attrib, sizeof(API_Attribute));
 				attrib.header.typeID = i_attrType;
+#if ACVER >= 27
+				attrib.header.index = ACAPI_CreateAttributeIndex(i);
+#else
 				attrib.header.index = i;
-
+#endif
 				err = ACAPI_Attribute_Get(&attrib);
 
 				if (err == NoError)
@@ -279,19 +327,28 @@ GS::Array<AbstractData*> ListAttributes(
 GS::Array<GS::UniString> GetCompositeNames()
 {
 	GS::Array<GS::UniString> resultArray;
-	API_AttributeIndex		count;
+	GSErrCode err;
+#if ACVER >= 27
+	GS::UInt32 count;
+	err = ACAPI_Attribute_GetNum(API_CompWallID, count);
+#else
+	API_AttributeIndex	count;
+	err = ACAPI_Attribute_GetNum(API_CompWallID, &count);
+#endif
 	API_Attribute			attrib;
 
-	GSErrCode err = ACAPI_Attribute_GetNum(API_CompWallID, &count);
 	if (err != NoError) {
 		WriteReport_Err("ACAPI_Attribute_GetNum", err);
 	}
 
-	for (Int32 i = 1; i <= count; i++) {
+	for (UInt32 i = 1; i <= count; i++) {
 		BNZeroMemory(&attrib, sizeof(API_Attribute));
 		attrib.header.typeID = API_CompWallID;
+#if ACVER >= 27
+		attrib.header.index = ACAPI_CreateAttributeIndex(i);
+#else
 		attrib.header.index = i;
-
+#endif
 		err = ACAPI_Attribute_Get(&attrib);
 
 		resultArray.Push(attrib.header.name);
@@ -348,27 +405,41 @@ void CheckConsistency()
 
 API_AttributeIndex GetAttributeIndexByName(const API_AttrTypeID i_type, const GS::UniString& i_name)
 {
-	API_AttributeIndex		count;
+	GSErrCode err;
+#if ACVER >= 27
+	GS::UInt32 count;
+	err = ACAPI_Attribute_GetNum(i_type, count);
+#else
+	API_AttributeIndex	count;
+	err = ACAPI_Attribute_GetNum(i_type, &count);
+#endif	
 	API_Attribute			attrib;
 
-	GSErrCode err = ACAPI_Attribute_GetNum(i_type, &count);
 	if (err != NoError) {
 		WriteReport_Err("ACAPI_Attribute_GetNum", err);
 	}
 
-	for (Int32 i = 1; i <= count; i++) {
+	for (UInt32 i = 1; i <= count; i++) {
 		try
 		{
 			BNZeroMemory(&attrib, sizeof(API_Attribute));
 			attrib.header.typeID = i_type;
+#if ACVER >= 27
+			attrib.header.index = ACAPI_CreateAttributeIndex(i);
+#else
 			attrib.header.index = i;
+#endif
 
 			err = ACAPI_Attribute_Get(&attrib);
 
 			if (err == NoError)
 			{
 				if (GS::UniString(attrib.header.name) == i_name)
+#if ACVER >= 27
+					return ACAPI_CreateAttributeIndex(i);
+#else
 					return (API_AttributeIndex)i;
+#endif
 			}
 		}
 		catch (...) {
@@ -376,5 +447,9 @@ API_AttributeIndex GetAttributeIndexByName(const API_AttrTypeID i_type, const GS
 		}
 	}
 
+#if ACVER >= 27
+	return ACAPI_CreateAttributeIndex(0);
+#else
 	return API_AttributeIndex(0);
+#endif
 }
