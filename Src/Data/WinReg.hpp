@@ -7,7 +7,7 @@
 
 #include	"winreg.h"
 
-const char  REG_PATH[] = "SOFTWARE\\LIMA\\ProjectHealthChecker";
+const char  REG_PATH[] = "SOFTWARE\\LIMA\\HealthChecker";
 const HKEY _HKEY = HKEY_CURRENT_USER;
 
 GS::UniString GetRegString(const GS::UniString& i_key, const GS::UniString& i_path = GS::UniString(REG_PATH), HKEY i_hkey = _HKEY);

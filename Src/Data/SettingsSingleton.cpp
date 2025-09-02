@@ -1,6 +1,6 @@
 #include	"SettingsSingleton.hpp"
 #include	"Table/ResultTable.hpp"
-#include	"ProjectHealthChecker.hpp"
+#include	"HealthChecker.hpp"
 #include	"WinReg.hpp"
 #include	"Enums/CheckboxEnum.hpp"
 

@@ -14,6 +14,11 @@
 #include "GSRoot.hpp"
 #include "UniString.hpp"
 
+#if ACVER == 27
+//#include	"ACAPI_MigrationHeader.hpp"
+#include	"..\..\CPPCommonLibs\AC27.hpp"
+#endif
+
 #if PRAGMA_ENUM_ALWAYSINT
 	#pragma enumsalwaysint on
 #elif PRAGMA_ENUM_OPTIONS

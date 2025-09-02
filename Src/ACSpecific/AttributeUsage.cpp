@@ -33,6 +33,20 @@ void AddAttribute(GS::HashTable<T, ResultRow>* const io_table,
 
 template <typename T>
 void AddAttribute(GS::HashTable<T, ResultRow>* const io_table,
+	const double i_idx,
+	GS::HashSet <T>* const io_set,
+	const UInt16 i_col
+	)
+{
+#if ACVER >=27
+	AddAttribute <T>(io_table, ACAPI_CreateAttributeIndex(i_idx), io_set, nullptr, i_col);
+#else
+	AddAttribute <T>(io_table, (API_AttributeIndex)i_idx, io_set, nullptr, i_col);
+#endif
+}
+
+template <typename T>
+void AddAttribute(GS::HashTable<T, ResultRow>* const io_table,
 	const T i_idx,
 	GS::HashSet <T>* const io_set,
 	const UInt16 i_col
@@ -75,15 +89,15 @@ void AttributeUsage::ProcessParameters(const API_Element& i_element, AttributeUs
 			switch (par.typeID)
 			{
 			case APIParT_LineTyp:
-				AddAttribute<API_AttributeIndex>(&ltUsageTable, (API_AttributeIndex)par.value.real, &io_attributeUsageSet->ltSet, 2);
+				AddAttribute<API_AttributeIndex>(&ltUsageTable, par.value.real, &io_attributeUsageSet->ltSet, 2);
 
 				break;
 			case APIParT_Mater:
-				AddAttribute<API_AttributeIndex>(&surfUsageTable, (API_AttributeIndex)par.value.real, &io_attributeUsageSet->surfSet, 2);
+				AddAttribute<API_AttributeIndex>(&surfUsageTable, par.value.real, &io_attributeUsageSet->surfSet, 2);
 
 				break;
 			case APIParT_FillPat:
-				AddAttribute<API_AttributeIndex>(&fillUsageTable, (API_AttributeIndex)par.value.real, &io_attributeUsageSet->fillSet, 2);
+				AddAttribute<API_AttributeIndex>(&fillUsageTable, par.value.real, &io_attributeUsageSet->fillSet, 2);
 
 				break;
 			case APIParT_PenCol:
@@ -91,11 +105,11 @@ void AttributeUsage::ProcessParameters(const API_Element& i_element, AttributeUs
 
 				break;
 			case APIParT_BuildingMaterial:
-				AddAttribute<API_AttributeIndex>(&buildMatUsageTable, (API_AttributeIndex)par.value.real, &io_attributeUsageSet->buildMatSet, 2);
+				AddAttribute<API_AttributeIndex>(&buildMatUsageTable, par.value.real, &io_attributeUsageSet->buildMatSet, 2);
 
 				break;
 			case APIParT_Profile:
-				AddAttribute<API_AttributeIndex>(&profileUsageTable, (API_AttributeIndex)par.value.real, &io_attributeUsageSet->profSet, 2);
+				AddAttribute<API_AttributeIndex>(&profileUsageTable, par.value.real, &io_attributeUsageSet->profSet, 2);
 
 				break;
 			}

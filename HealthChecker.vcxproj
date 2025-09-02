@@ -25,6 +25,14 @@
       <Configuration>Release 26 EN</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug 27 EN|x64">
+      <Configuration>Debug 27 EN</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release 27 EN|x64">
+      <Configuration>Release 27 EN</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug 24 EN'">
     <ACVersion>24</ACVersion>
@@ -56,35 +64,49 @@
     <BuildType>Release</BuildType>
     <LanguageCode>en</LanguageCode>
   </PropertyGroup>
-  <PropertyGroup Label="UserMacros">
-    <ACDevKit>..\ArchiCAD_API\API Development Kit $(ACVersion)</ACDevKit>
-    <ACDevKitSupport>$(ACDevKit)\Support</ACDevKitSupport>
-    <ACDevKitModules>$(ACDevKitSupport)\Modules</ACDevKitModules>
-    <AdditionalIncludeDirectories>$(AdditionalIncludeDirectories);$(ACDevKitSupport)\Inc;$(ACDevKitModules)\Geometry;$(ACDevKitModules)\Graphix;$(ACDevKitModules)\GSRoot;$(ACDevKitModules)\InputOutput;$(ACDevKitModules)\GSUtils;$(ACDevKitModules)\VectorImage;$(ACDevKitModules)\LibXL;$(ACDevKitModules)\TextEngine;$(ACDevKitModules)\DGLib;$(ACDevKitModules)\Pattern;Src;Src/ACSpecific;Src/Data;Src/Table</AdditionalIncludeDirectories>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug 27 EN'">
+    <ACVersion>27</ACVersion>
+    <BuildType>Debug</BuildType>
+    <LanguageCode>en</LanguageCode>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release 27 EN'">
+    <ACVersion>27</ACVersion>
+    <BuildType>Release</BuildType>
+    <LanguageCode>en</LanguageCode>
+  </PropertyGroup>
+	<!-- ACVersion must be defined -->
+  <Import Project="..\local.props" Condition="Exists('..\local.props')" />
+  <Import Project="local.props" Condition="!Exists('..\local.props')" />
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DA52A917-60AF-4125-87A3-D0DFCC4A5F54}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'=='24'" Label="Globals">
-    <ProjectGuid>{DA52A917-60AF-4125-87A3-D0DFCC4A5F54}</ProjectGuid>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'=='25'" Label="Globals">
-    <ProjectGuid>{DA52A917-60AF-4125-87A3-D0DFCC4A5F54}</ProjectGuid>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'=='26'" Label="Globals">
-    <ProjectGuid>DA52A917-60AF-4125-87A3-D0DFCC4A5F54}</ProjectGuid>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(ACVersion)'=='27'" Label="Globals">
+    <WindowsTargetPlatformVersion>10</WindowsTargetPlatformVersion>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(ACVersion)'==24" Label="Configuration">
+  <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ACVersion)'==24" Label="Configuration">
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'==25" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ACVersion)'==26" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ACVersion)'==27" Label="Configuration">
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
@@ -111,6 +133,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
+			<!--<AdditionalIncludeDirectories>$(AdditionalIncludeDirectories);$(ACDevKitSupport)\Inc;$(ACDevKitModules)\Geometry;$(ACDevKitModules)\GSRoot;$(ACDevKitModules)\InputOutput;$(ACDevKitModules)\VectorImage;$(ACDevKitModules)\LibXL;$(ACDevKitModules)\TextEngine;$(ACDevKitModules)\DGLib;$(ACDevKitModules)\Pattern;Src;Src/ACSpecific;Src/Data;Src/Table</AdditionalIncludeDirectories>-->
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
@@ -153,7 +176,13 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(ACVersion)'== 26">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(AdditionalIncludeDirectories);$(ACDevKitSupport)\Extensions\APIOutputFramework;$(ACDevKitModules)\RS</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>Src;Src\ACSpecific;Src\Data;$(ACDevKitModules)\VectorImage;$(ACDevKitModules)\GSRoot;$(ACDevKitModules)\Graphix;$(ACDevKitModules)\Geometry;$(ACDevKitModules)\Pattern;$(ACDevKitModules)\GSUtils;$(ACDevKitModules)\InputOutput;$(ACDevKitModules)\LibXL;$(ACDevKitModules)\DGLib;$(AdditionalIncludeDirectories);$(ACDevKitSupport)\Inc;$(ACDevKitModules)\TextEngine;$(ACDevKitSupport)\Extensions\APIOutputFramework;$(ACDevKitModules)\RS</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(ACVersion)'== 27">
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>Src;Src\ACSpecific;Src\Data;$(ACDevKitModules)\VectorImage;$(ACDevKitModules)\GSRoot;$(ACDevKitModules)\Graphix;$(ACDevKitModules)\Geometry;$(ACDevKitModules)\Pattern;$(ACDevKitModules)\GSUtils;$(ACDevKitModules)\InputOutput;$(ACDevKitModules)\LibXL;$(ACDevKitModules)\DGLib;$(AdditionalIncludeDirectories);$(ACDevKitSupport)\Inc;$(ACDevKitModules)\TextEngine;$(ACDevKitSupport)\Extensions\APIOutputFramework;$(ACDevKitModules)\RS;$(ACDevKitModules)\CADInfrastructureBase</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(BuildType)'=='Debug'">
@@ -294,7 +323,7 @@
     <ClInclude Include="Src\ACSpecific\LibPart.hpp" />
     <ClInclude Include="Src\ACSpecific\Navigator.hpp" />
     <ClInclude Include="Src\ACSpecific\Profile.hpp" />
-    <ClInclude Include="Src\ProjectHealthChecker.hpp" />
+    <ClInclude Include="Src\HealthChecker.hpp" />
     <ClInclude Include="Src\Table\LibXLExtended.hpp" />
     <ClInclude Include="Src\Table\ResultTable.hpp" />
     <ClInclude Include="Src\ACSpecific\SEO.hpp" />

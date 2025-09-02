@@ -5,6 +5,11 @@
 #include	"ACAPinc.h"					// also includes APIdefs.h
 #include	"APICommon.h"
 
+#if ACVER == 27
+//#include	"ACAPI_MigrationHeader.hpp"
+#include	"..\..\CPPCommonLibs\AC27.hpp"
+#endif
+
 class APITypeDict {
 public:
 	GS::HashTable<GS::UniString, API_LibraryTypeID> table;
