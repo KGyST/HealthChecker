@@ -72,12 +72,6 @@
     <Library Include="$(ACDevKitModules)\DGLib\Win\DGImp.lib">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="$(ACDevKitModules)\LibXL\Win\LibXLImp.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="$(ACDevKitModules)\ObjectDatabase\Win\ObjectDatabaseImp.LIB">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="$(ACDevKitModules)\RS\Win\RSImp.lib">
       <Filter>Libs</Filter>
     </Library>
@@ -90,7 +84,13 @@
     <Library Include="$(ACDevKitModules)\VectorImage\Win\VectorImageImp.LIB">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="$(ACDevKitSupport)\Lib\Win\ACAP_STATD.lib">
+    <Library Include="$(ACDevKitSupport)\Lib$(WinCorr)\ACAP_STATD.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="$(ACDevKitModules)\CADInfrastructureBase\Win\CADInfrastructureBaseImp.LIB">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="$(ACDevKitModules)\LibXL\Win\LibXL$(ImpCorr).lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>
@@ -133,12 +133,12 @@
     <Filter Include="Sources\Enums">
       <UniqueIdentifier>{523bf36b-77d0-494a-b0ab-f10599ebd337}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Visualizers">
+      <UniqueIdentifier>{c17c8a4a-2b83-4fdb-88ee-47e3fec7822f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\APICommon.h">
-      <Filter>Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\ProjectHealthChecker.hpp">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="Src\Table\ResultTable.hpp">
@@ -209,6 +209,9 @@
     </ClInclude>
     <ClInclude Include="Src\Constants\loglevelStrings.hpp">
       <Filter>Sources\Constants</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\HealthChecker.hpp">
+      <Filter>Sources</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

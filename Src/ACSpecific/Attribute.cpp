@@ -137,27 +137,85 @@ void AddAttributeListToTable(const API_AttrTypeID i_attrID, const GS::HashTable<
 	return AddAttributeListToTable(i_attrID, i_table, GSFR(i_sTable), i_hasName);
 }
 
+// -----------------------------------------------------------------------------
+//  List pens (AC 27+)
+// -----------------------------------------------------------------------------
+
 #if ACVER >= 27
-//void AddPenListToTable(const GS::HashTable<short, ResultRow>& i_table, const GS::UniString& i_sTable, const bool i_hasName = true)
-//{
-//	GS::Array<AbstractData*> resultArray;
-//
-//	resultArray = ListAttributes(CountPenListContents, &StructDefObject<short>(i_table));
-//
-//	for (AbstractData* attrib : resultArray)
-//	{
-//		AttributeReportObject* _attrib = (AttributeReportObject*)attrib;
-//
-//		if (i_hasName)
-//			SETTINGS().GetSheet(i_sTable).AddItem(GS::UniString(_attrib->name), _attrib->resultRow);
-//		else
-//		{
-//			char sAttrib[4];
-//			itoa(_attrib->id, sAttrib, 10);
-//			SETTINGS().GetSheet(i_sTable).AddItem(GS::UniString(sAttrib), _attrib->resultRow);
-//		}
-//	}
-//}
+static AbstractData* CountPenListContents(const API_Pen& i_apiPen, AbstractData* const i_attrs)
+{
+	AttributeReportObject* result = new AttributeReportObject;
+
+	GS::HashTable<short, ResultRow>  t = ((StructDefObject<short>*)i_attrs)->table;
+	short i = i_apiPen.index;
+	result->id = i;
+	if (t.ContainsKey(i))
+	{
+		result->resultRow = t[i];
+	}
+	else
+		result->resultRow = ResultRow{ 0 };
+
+	return result;
+}
+
+static GS::Array<AbstractData*> ListPens(
+	AbstractData* (* const i_func)(const API_Pen&, AbstractData* const) /*= nullptr*/,
+	AbstractData* const i_attrs /*= nullptr*/)
+{
+	API_Pen		pen;
+	GSErrCode	err;
+	GS::UInt32	count;
+	err = ACAPI_Attribute_GetPenNum(count);
+	AbstractData* resultThis;
+	GS::Array<AbstractData*>	io_attrs;
+
+	if (err != NoError) {
+		WriteReport_Err("ACAPI_Attribute_GetPenNum", err);
+	}
+
+	if (i_func)
+		for (UInt32 i = 1; i <= count; i++) {
+			try
+			{
+				BNZeroMemory(&pen, sizeof(API_Pen));
+				pen.index = i;
+				err = ACAPI_Attribute_GetPen(pen);
+
+				if (err == NoError)
+				{
+					resultThis = i_func(pen, i_attrs);
+					io_attrs.Push(resultThis);
+				}
+			}
+			catch (...) {
+				continue;
+			}
+		}
+
+	return io_attrs;
+}
+
+static void AddPenListToTable(const GS::HashTable<short, ResultRow>& i_table, const GS::UniString& i_sTable, const bool i_hasName = true)
+{
+	GS::Array<AbstractData*> resultArray;
+
+	resultArray = ListPens(CountPenListContents, &StructDefObject<short>(i_table));
+
+	for (AbstractData* attrib : resultArray)
+	{
+		AttributeReportObject* _attrib = (AttributeReportObject*)attrib;
+
+		if (i_hasName)
+			SETTINGS().GetSheet(i_sTable).AddItem(GS::UniString(_attrib->name), _attrib->resultRow);
+		else
+		{
+			char sAttrib[4];
+			itoa(_attrib->id, sAttrib, 10);
+			SETTINGS().GetSheet(i_sTable).AddItem(GS::UniString(sAttrib), _attrib->resultRow);
+		}
+	}
+}
 #endif
 
 // -----------------------------------------------------------------------------
@@ -181,7 +239,7 @@ void ProcessAttributes()
 	SETTINGS().GetSheet(LayerData).SetHeader(ReportSheetHeader{ GSFR(LayerName), REPORT_ROWS });
 
 #if ACVER >= 27
-	//AddPenListToTable(SETTINGS().attributeUsage.penUsageTable, PenData, false);
+	AddPenListToTable(SETTINGS().attributeUsage.penUsageTable, GSFR(PenData), false);
 #else
 	AddAttributeListToTable<short>(API_PenID, SETTINGS().attributeUsage.penUsageTable, PenData, false);
 #endif
