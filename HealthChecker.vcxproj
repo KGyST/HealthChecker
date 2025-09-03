@@ -345,6 +345,16 @@
     <ClInclude Include="Src\Utils\Logger.hpp" />
     <ClInclude Include="Src\Utils\Utils.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(NatVisRoot)\Brep.natvis" />
+    <Natvis Include="$(NatVisRoot)\DynamicObject.natvis" />
+    <Natvis Include="$(NatVisRoot)\Geometry.natvis" />
+    <Natvis Include="$(NatVisRoot)\GS.natvis" />
+    <Natvis Include="$(NatVisRoot)\GSModeler.natvis" />
+    <Natvis Include="$(NatVisRoot)\GSXML.natvis" />
+    <Natvis Include="$(NatVisRoot)\IO.natvis" />
+    <Natvis Include="$(NatVisRoot)\ODB.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

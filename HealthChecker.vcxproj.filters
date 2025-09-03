@@ -214,4 +214,30 @@
       <Filter>Sources</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(NatVisRoot)\ODB.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+    <Natvis Include="$(NatVisRoot)\Brep.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+    <Natvis Include="$(NatVisRoot)\DynamicObject.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+    <Natvis Include="$(NatVisRoot)\Geometry.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+    <Natvis Include="$(NatVisRoot)\GS.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+    <Natvis Include="$(NatVisRoot)\GSModeler.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+    <Natvis Include="$(NatVisRoot)\GSXML.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+    <Natvis Include="$(NatVisRoot)\IO.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+  </ItemGroup>
 </Project>
